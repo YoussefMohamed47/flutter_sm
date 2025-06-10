@@ -1,7 +1,6 @@
 import 'dart:developer';
 
-import 'package:cubiiit/controllers/bloc/task_bloc.dart';
-import 'package:cubiiit/controllers/cubit/task_cubit.dart';
+import 'package:cubiiit/controllers/product_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -76,55 +75,69 @@ class MyHomePage extends StatelessWidget {
         title: Text(title),
       ),
       body: BlocProvider(
-        create: (context) => TaskBloc(),
-        child: BlocBuilder<TaskBloc, TaskState>(
+        create: (context) => ProductCubit()..getProductData(),
+        child: BlocBuilder<ProductCubit, ProductState>(
           builder: (context, state) {
-            return Column(
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: const InputDecoration(
-                    labelText: 'Enter Task',
-                    border: OutlineInputBorder(),
+            switch (state) {
+              case ProductLoading():
+                // TODO: Handle this case.
+                return const Center(child: CircularProgressIndicator());
+              case ProductLoaded():
+                // TODO: Handle this case.
+                return GridView.builder(
+                  padding: const EdgeInsets.all(10),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.7,
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (controller.text.isNotEmpty) {
-                      context.read<TaskBloc>().add(
-                            AddTaskEvent(controller.text),
-                          );
-                      controller.clear();
-                    }
+                  itemCount: state.products.length,
+                  itemBuilder: (context, index) {
+                    final product = state.products[index];
+                    return Card(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      elevation: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Image.network(
+                              product.imageUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              product.title,
+                              textAlign: TextAlign.center,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            "\$${product.price}",
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.green),
+                          ),
+                        ],
+                      ),
+                    );
                   },
-                  child: const Text('Add Task'),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: state.tasksList.length,
-                    itemBuilder: (context, index) {
-                      final task = state.tasksList[index];
-                      return ListTile(
-                        title: Text(task.title),
-                        trailing: Checkbox(
-                          value: task.isCompleted,
-                          onChanged: (value) {
-                            context
-                                .read<TaskBloc>()
-                                .add(UpdateTaskEvent(task.id, task.title));
-                          },
-                        ),
-                        onLongPress: () {
-                          context.read<TaskBloc>().add(
-                                RemoveTaskEvent(task.id),
-                              );
-                        },
-                      );
-                    },
+                );
+              case ProductError():
+                // TODO: Handle this case.
+                return Center(
+                  child: Text(
+                    'Error: ${state.errorMessage}',
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
                   ),
-                ),
-              ],
-            );
+                );
+            }
           },
         ),
       ),
